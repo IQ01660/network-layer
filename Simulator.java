@@ -261,7 +261,6 @@ public class Simulator {
 
         receiver.stop();
         sender.stop();
-
     } // simulate()
     // =========================================================================
 

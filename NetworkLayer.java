@@ -238,34 +238,35 @@ public abstract class NetworkLayer {
      */
     public void send (String destination, byte[] data) {
 
-	// Determine the address of the destination.
-	int destinationAddress = destination.hashCode();
-	
-	// Loop through the data in packet-size chunks.
-	int numPackets = ((data.length / MAX_PACKET_SIZE) +
-			  (data.length % MAX_PACKET_SIZE == 0 ? 0 : 1));
-	for (int i = 0; i < numPackets; i += 1) {
+        // Determine the address of the destination.
+        int destinationAddress = destination.hashCode();
+        
+        // Loop through the data in packet-size chunks.
+        int numPackets = ((data.length / MAX_PACKET_SIZE) +
+                  (data.length % MAX_PACKET_SIZE == 0 ? 0 : 1));
 
-	    // Grab the next packet-worth of data a make of packet of it.
-	    int    start      = i * MAX_PACKET_SIZE;
-	    int    end        = Math.min((i + 1) * MAX_PACKET_SIZE,
-					 data.length);
-	    byte[] packetData = Arrays.copyOfRange(data, start, end);
-	    byte[] packet     = createPacket(destinationAddress, packetData);
+        for (int i = 0; i < numPackets; i += 1) {
 
-	    // Choose the data link layer through which to route.
-	    DataLinkLayer dataLink = route(destinationAddress);
+            // Grab the next packet-worth of data a make of packet of it.
+            int    start      = i * MAX_PACKET_SIZE;
+            int    end        = Math.min((i + 1) * MAX_PACKET_SIZE,
+                         data.length);
+            byte[] packetData = Arrays.copyOfRange(data, start, end);
+            byte[] packet     = createPacket(destinationAddress, packetData);
 
-	    // Send the packet.
-	    dataLink.send(packet);
+            // Choose the data link layer through which to route.
+            DataLinkLayer dataLink = route(destinationAddress);
 
-	    if (debug) {
-		System.err.printf("Address %d sent packet:\n\t%s\n",
-				  address,
-				  bytesToString(packet));
-	    }
-	    
-	}
+            // Send the packet.
+            dataLink.send(packet);
+
+            if (debug) {
+            System.err.printf("Address %d sent packet:\n\t%s\n",
+                      address,
+                      bytesToString(packet));
+            }
+            
+        }
 	
     } // send ()
     // =========================================================================
@@ -332,17 +333,17 @@ public abstract class NetworkLayer {
      */
     public void receive (DataLinkLayer dataLink, byte[] data) {
 
-	Queue<Byte> buffer = receiveBuffers.get(dataLink);
+        Queue<Byte> buffer = receiveBuffers.get(dataLink);
 
-	for (int i = 0; i < data.length; i += 1) {
-	    buffer.add(data[i]);
-	}
+        for (int i = 0; i < data.length; i += 1) {
+            buffer.add(data[i]);
+        }
 
-	if (debug) {
-	    System.err.printf("Address %d received bytes:\n\t%s\n",
-			      address,
-			      bytesToString(data));
-	}
+        if (debug) {
+            System.err.printf("Address %d received bytes:\n\t%s\n",
+                      address,
+                      bytesToString(data));
+        }
 
     } // receive ()
     // =========================================================================

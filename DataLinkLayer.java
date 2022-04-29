@@ -144,27 +144,29 @@ public abstract class DataLinkLayer {
      */
     public void checkEvents () {
 
-	// If there is buffered data to send, then frame and send it.
-	if (sendBuffer.peek() != null) {
-	    Queue<Byte> framedData = sendNextFrame();
-	    if (framedData != null) {
-		finishFrameSend(framedData);
-	    }
-	}
+        // If there is buffered data to send, then frame and send it.
+        if (sendBuffer.peek() != null) {
+            Queue<Byte> framedData = sendNextFrame();
 
-	// If there are received buffered bits, process them.
-	receive();
+            if (framedData != null) {
+                finishFrameSend(framedData);
+            }
+        }
 
-	// If there are received buffered bytes, try to process a frame.
-	if (receiveBuffer.peek() != null) {
-	    Queue<Byte> receivedFrame = processFrame();
-	    if (receivedFrame != null) {
-		finishFrameReceive(receivedFrame);
-	    }
-	}
+        // If there are received buffered bits, process them.
+        receive();
 
-	// Check whether a timeout action needs to be taken.
-	checkTimeout();
+        // If there are received buffered bytes, try to process a frame.
+        if (receiveBuffer.peek() != null) {
+            Queue<Byte> receivedFrame = processFrame();
+
+            if (receivedFrame != null) {
+                finishFrameReceive(receivedFrame);
+            }
+        }
+
+        // Check whether a timeout action needs to be taken.
+        checkTimeout();
 
     } // checkEvents ()
     // =========================================================================

@@ -97,7 +97,7 @@ public class Host implements Runnable {
      */
     public void send (String destination, byte[] data) {
 
-	networkLayer.send(destination, data);
+        networkLayer.send(destination, data);
 	
     } // send ()
     // =========================================================================

@@ -1,6 +1,7 @@
 // =============================================================================
 // IMPORTS
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -46,6 +47,44 @@ public class RandomNetworkLayer extends NetworkLayer {
     // =========================================================================
 
     
+    /**
+     * Insert an integer at a certain offset into a byte array 
+     * note: do not do any woodoo with the signed bit
+     */
+    private void insertInt(int value, int offset, byte[] dest) {
+        for (int i = offset; i < offset + Integer.BYTES; i++) {
+            byte significant_byte = (byte) ((value & 0xFF000000) >>> (3 * BITS_PER_BYTE));
+            value <<= BITS_PER_BYTE;
+
+            dest[i] = significant_byte;
+        }
+    }
+
+    /**
+     * extracts a header segment info from
+     * the first packet in the buffer
+     * @param offset
+     * @param buffer
+     * @return length
+     */
+    private int getPacketInfoAt(int offset, Iterable<Byte> buffer) {
+
+        // check the length of the first potential packet
+        Iterator<Byte> i = buffer.iterator();
+        byte[] header_seg = new byte[Integer.BYTES];
+
+        // iterate until offset
+        for (int idx = 0; idx < offset; idx++) i.next();
+
+        // get the bytes
+        for (int idx = 0; idx < Integer.BYTES; idx++) {
+            header_seg[idx] = i.next();
+        }
+
+        // get the length as an integer
+        return bytesToInt(header_seg);
+    }
+
 
     // =========================================================================
     /**
@@ -86,24 +125,13 @@ public class RandomNetworkLayer extends NetworkLayer {
         for (int i = 0; i < data.length; i++) {
             packet[i + bytesPerHeader] = data[i];
         }
-
+        
+        Queue<Byte> packetQueue = new LinkedList<>();
+        for (int i = 0; i < packet.length; i++) packetQueue.add(packet[i]);
+        System.out.println(getPacketInfoAt(sourceOffset, packetQueue));
         return packet;
     } // createPacket ()
     // =========================================================================
-
-
-    /**
-     * Insert an integer at a certain offset into a byte array 
-     * note: do not do any woodoo with the signed bit
-     */
-    private void insertInt(int value, int offset, byte[] dest) {
-        for (int i = offset; i < Integer.BYTES; i++) {
-            byte significant_byte = (byte) ((value & 0xFF000000) >>> (3 * BITS_PER_BYTE));
-            value <<= BITS_PER_BYTE;
-
-            dest[i] = significant_byte;
-        }
-    }
 
     // =========================================================================
     /**
@@ -142,6 +170,7 @@ public class RandomNetworkLayer extends NetworkLayer {
                 chosen_addr = addr;
                 break;
             }
+            idx++;
         }
 
         // at this point we have chose our address
@@ -164,7 +193,23 @@ public class RandomNetworkLayer extends NetworkLayer {
     protected byte[] extractPacket (Queue<Byte> buffer) {
 
         // COMPLETE ME
-	
+        // check if there are at least HEADER bytes in the buffer + 1 byte 
+        if (buffer.size() <= bytesPerHeader) return null;
+
+        int length = getPacketInfoAt(lengthOffset, buffer);
+
+        // if not the whole packet is there yet
+        if (length + bytesPerHeader > buffer.size()) return null;
+
+        // extract the length + bytesPerHeader worth of bytes and return as an array 
+        byte[] packet = new byte[length + bytesPerHeader];
+        
+        for (int idx = 0; idx < packet.length; idx++) {
+            packet[idx] = buffer.remove();
+        }
+
+
+        return packet;
     } // extractPacket ()
     // =========================================================================
 
@@ -182,7 +227,26 @@ public class RandomNetworkLayer extends NetworkLayer {
     protected void processPacket (byte[] packet) {
 
         // COMPLETE ME
+        // first obtain the destination address and the length
+        Queue<Byte> packetQueue = new LinkedList<>();
+        for (int i = 0; i < packet.length; i++) packetQueue.add(packet[i]);
+        int destination = getPacketInfoAt(destinationOffset, packetQueue);
 	
+        // get the packet data only into a separate array
+        byte[] packet_data = new byte[packet.length - bytesPerHeader];
+
+        for (int i = bytesPerHeader; i < packet.length; i++) packet_data[i - bytesPerHeader] = packet[i];
+
+        // check if this host is the destination 
+        if (address == destination) {
+            client.receive(packet_data);
+            System.out.println("arrived");
+            return;
+        }
+        
+        // if destination is another host - reroute
+        DataLinkLayer next_datalink = route(destination);
+        next_datalink.send(packet);
     } // processPacket ()
     // =========================================================================
     
